@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The Ledger - Reminders</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+
+    --bg: #F6F1E6;
+    --surface: #FFFFFF;
+    --surface-2: #FBF7EF;
+    --ink: #232019;
+    --ink-soft: #6B6357;
+    --line: #E4DBC8;
+    --gold: #A9782E;
+    --gold-deep: #7C5A21;
+
+    --shadow: 0 1px 2px rgba(35,32,25,0.06), 0 8px 24px -12px rgba(35,32,25,0.18);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #17140F;
+      --surface: #211C15;
+      --surface-2: #241F17;
+      --ink: #EFE9DC;
+      --ink-soft: #A79A83;
+      --line: #372F23;
+      --gold: #D6A94F;
+      --gold-deep: #E8C066;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #17140F;
+    --surface: #211C15;
+    --surface-2: #241F17;
+    --ink: #EFE9DC;
+    --ink-soft: #A79A83;
+    --line: #372F23;
+    --gold: #D6A94F;
+    --gold-deep: #E8C066;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Inter', 'Segoe UI', sans-serif;
+    min-height: 100%;
+  }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+
+  .app { max-width: 720px; margin: 0 auto; padding: 28px 18px 60px; }
+
+  header.top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 22px;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 16px;
+  }
+  header.top h1 {
+    font-family: 'Lora', serif;
+    font-weight: 700;
+    font-style: italic;
+    font-size: 28px;
+    margin: 0;
+    color: var(--ink);
+    letter-spacing: 0.2px;
+  }
+  header.top .sub { font-size: 12.5px; color: var(--ink-soft); margin-top: 4px; font-style: normal; }
+  .headBtns { display: flex; gap: 8px; flex: none; }
+  .iconBtn {
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    padding: 6px 12px;
+    border-radius: 20px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: border-color .15s ease;
+    font-family: inherit;
+  }
+  .iconBtn:hover { border-color: var(--gold); }
+  .iconBtn.on { color: var(--gold-deep); border-color: var(--gold); }
+
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); }
+
+  form#addForm { padding: 18px; margin-bottom: 26px; }
+  form#addForm .row { display: flex; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+  form#addForm .row:last-child { margin-bottom: 0; }
+  .field { flex: 1 1 140px; min-width: 0; }
+  .field label { display: block; font-size: 11.5px; color: var(--ink-soft); margin-bottom: 5px; }
+  input[type=text], input[type=date], input[type=time], select, textarea {
+    width: 100%;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 9px 10px;
+    font-size: 14.5px;
+    font-family: inherit;
+    color: var(--ink);
+  }
+  textarea { resize: vertical; min-height: 40px; }
+  input:focus, select:focus, textarea:focus, button:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; }
+
+  .cat-picker { display: flex; gap: 8px; flex-wrap: wrap; }
+  .cat-chip {
+    border: 1px solid var(--line);
+    background: var(--surface-2);
+    border-radius: 20px;
+    padding: 7px 14px;
+    font-size: 13px;
+    cursor: pointer;
+    color: var(--ink-soft);
+    user-select: none;
+  }
+  .cat-chip.active {
+    background: color-mix(in srgb, var(--catcolor) 18%, var(--surface-2));
+    color: var(--catcolor);
+    border-color: var(--catcolor);
+  }
+
+  .recur-picker { display: flex; gap: 6px; }
+  .recur-picker button {
+    flex: 1; border: 1px solid var(--line); background: var(--surface-2);
+    border-radius: 8px; padding: 8px 6px; font-size: 12.5px; color: var(--ink-soft);
+    cursor: pointer; font-family: inherit;
+  }
+  .recur-picker button.active { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+  #addBtn {
+    margin-top: 14px; width: 100%; background: var(--ink); color: var(--bg);
+    border: none; border-radius: 9px; padding: 12px; font-size: 15px;
+    font-weight: 600; font-family: inherit; cursor: pointer;
+  }
+  #addBtn:active { opacity: 0.85; }
+
+  .section-label { font-size: 13px; color: var(--ink-soft); margin: 22px 4px 10px; display: flex; align-items: center; gap: 8px; }
+  .section-label .count { background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 1px 8px; font-size: 11.5px; }
+
+  .item { display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+  .item:last-child { border-bottom: none; }
+  .item .stripe { width: 4px; align-self: stretch; border-radius: 3px; flex: none; background: var(--catcolor); }
+  .item .body { flex: 1; min-width: 0; }
+  .item .top-row { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+  .item .title { font-size: 15px; font-weight: 600; word-break: break-word; }
+  .item.done .title { text-decoration: line-through; color: var(--ink-soft); }
+  .item .when { font-size: 12.5px; color: var(--ink-soft); white-space: nowrap; flex: none; }
+  .item .when.overdue { color: #C0453F; font-weight: 600; }
+  .item .notes { font-size: 13px; color: var(--ink-soft); margin-top: 4px; word-break: break-word; }
+  .item .tag {
+    display: inline-block; font-size: 11px; padding: 1px 8px; border-radius: 10px; margin-top: 6px;
+    background: color-mix(in srgb, var(--catcolor) 20%, var(--surface-2));
+    color: var(--catcolor);
+  }
+
+  .item .actions { display: flex; flex-direction: column; gap: 6px; flex: none; }
+  .item .actions button {
+    background: none; border: 1px solid var(--line); border-radius: 7px;
+    width: 30px; height: 30px; font-size: 14px; cursor: pointer; color: var(--ink-soft);
+  }
+  .item .actions button:hover { border-color: var(--gold); color: var(--gold-deep); }
+
+  .empty { text-align: center; padding: 40px 20px; color: var(--ink-soft); font-size: 14px; }
+  .empty .big { font-size: 30px; margin-bottom: 8px; }
+
+  .filters { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 4px; }
+  .filters button {
+    flex: none; background: var(--surface-2); border: 1px solid var(--line); color: var(--ink-soft);
+    border-radius: 20px; padding: 7px 14px; font-size: 13px; cursor: pointer; font-family: inherit;
+  }
+  .filters button.allBtn.active { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .filters button.catbtn.active {
+    background: color-mix(in srgb, var(--catcolor) 20%, var(--surface-2));
+    color: var(--catcolor);
+    border-color: var(--catcolor);
+  }
+
+  #toast {
+    position: fixed;
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+    left: 50%; transform: translateX(-50%);
+    background: var(--ink); color: var(--bg);
+    padding: 12px 20px; border-radius: 10px; font-size: 13.5px;
+    box-shadow: var(--shadow); opacity: 0; pointer-events: none;
+    transition: opacity .25s ease; max-width: 90%; text-align: center; z-index: 50;
+  }
+  #toast.show { opacity: 1; }
+
+  @media (max-width: 420px) { header.top h1 { font-size: 23px; } }
+
+  /* ---- alarm popup ---- */
+  #alarmOverlay {
+    position: fixed; inset: 0; background: rgba(15,12,8,0.6);
+    display: none; align-items: center; justify-content: center; padding: 20px; z-index: 100;
+  }
+  #alarmOverlay.show { display: flex; }
+  #alarmCard {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 18px;
+    padding: 30px 24px 24px; max-width: 380px; width: 100%; text-align: center;
+    box-shadow: 0 20px 60px -20px rgba(0,0,0,0.5); animation: alarmPop .2s ease;
+  }
+  @keyframes alarmPop { from { transform: scale(0.94); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  #alarmCard .bell { font-size: 42px; margin-bottom: 10px; display: inline-block; animation: alarmShake 0.6s ease-in-out infinite; }
+  @keyframes alarmShake { 0%,100% { transform: rotate(0deg); } 20% { transform: rotate(-12deg); } 40% { transform: rotate(10deg); } 60% { transform: rotate(-8deg); } 80% { transform: rotate(6deg); } }
+  #alarmCard .atitle { font-family: 'Lora', serif; font-weight: 700; font-size: 19px; margin-bottom: 8px; color: var(--ink); }
+  #alarmCard .atag {
+    display: inline-block; font-size: 12px; padding: 3px 12px; border-radius: 12px; margin-bottom: 12px;
+    background: color-mix(in srgb, var(--catcolor) 20%, var(--surface-2));
+    color: var(--catcolor);
+  }
+  #alarmCard .anotes { font-size: 13.5px; color: var(--ink-soft); margin-bottom: 20px; }
+  #alarmCard .abtns { display: flex; gap: 10px; }
+  #alarmCard .abtns button { flex: 1; padding: 12px; border-radius: 10px; font-size: 14.5px; font-family: inherit; cursor: pointer; border: 1px solid var(--line); }
+  #alarmCard .snoozeBtn { background: var(--surface-2); color: var(--ink); }
+  #alarmCard .dismissBtn { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+  /* ---- settings (manage categories) popup ---- */
+  #settingsOverlay {
+    position: fixed; inset: 0; background: rgba(15,12,8,0.55);
+    display: none; align-items: center; justify-content: center; padding: 18px; z-index: 100;
+  }
+  #settingsOverlay.show { display: flex; }
+  #settingsCard {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 18px;
+    padding: 20px; max-width: 440px; width: 100%; max-height: 85vh; overflow-y: auto;
+    box-shadow: 0 20px 60px -20px rgba(0,0,0,0.5);
+  }
+  .modalHead { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .modalHead .modalTitle { font-family: 'Lora', serif; font-weight: 700; font-size: 18px; }
+  .closeX { background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; width: 30px; height: 30px; cursor: pointer; color: var(--ink-soft); font-size: 14px; }
+  .catRow {
+    display: flex; align-items: center; gap: 8px; padding: 9px 0; border-bottom: 1px solid var(--line);
+  }
+  .catRow:last-of-type { border-bottom: none; }
+  .catRow .emojiInput { width: 44px; text-align: center; padding: 8px 4px; flex: none; }
+  .catRow .nameInput { flex: 1; min-width: 0; }
+  .catRow input[type=color] {
+    -webkit-appearance: none; appearance: none; width: 34px; height: 34px; flex: none;
+    border: 1px solid var(--line); border-radius: 8px; padding: 2px; background: var(--surface-2); cursor: pointer;
+  }
+  .catRow input[type=color]::-webkit-color-swatch { border-radius: 5px; border: none; }
+  .catRow .delCatBtn {
+    flex: none; background: none; border: 1px solid var(--line); border-radius: 7px;
+    width: 32px; height: 32px; cursor: pointer; color: var(--ink-soft); font-size: 13px;
+  }
+  .catRow .delCatBtn:hover { border-color: #C0453F; color: #C0453F; }
+  .addCatRow { display: flex; align-items: center; gap: 8px; padding-top: 14px; margin-top: 4px; border-top: 1px dashed var(--line); }
+  .addCatRow .nameInput { flex: 1; min-width: 0; }
+  #addCatBtn {
+    flex: none; background: var(--ink); color: var(--bg); border: none; border-radius: 8px;
+    padding: 9px 14px; font-size: 13.5px; font-family: inherit; cursor: pointer;
+  }
+  .settingsHint { font-size: 12px; color: var(--ink-soft); margin-top: 12px; line-height: 1.5; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="top">
+    <div>
+      <h1>The Ledger</h1>
+      <div class="sub" id="headerSub"></div>
+    </div>
+    <div class="headBtns">
+      <button id="settingsBtn" class="iconBtn" type="button">⚙️ Categories</button>
+      <button id="bellStatus" class="iconBtn" type="button">🔔 Enable alerts</button>
+    </div>
+  </header>
+
+  <form class="card" id="addForm">
+    <div class="row">
+      <div class="field" style="flex: 1 1 100%;">
+        <label for="titleInput">Reminder</label>
+        <input type="text" id="titleInput" placeholder="e.g. Send SOA to AE10 client" required>
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label for="dateInput">Date</label>
+        <input type="date" id="dateInput" required>
+      </div>
+      <div class="field">
+        <label for="timeInput">Time</label>
+        <input type="time" id="timeInput" required>
+      </div>
+    </div>
+    <div class="row">
+      <div class="field" style="flex: 1 1 100%;">
+        <label>Category</label>
+        <div class="cat-picker" id="catPicker"></div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="field" style="flex: 1 1 100%;">
+        <label>Repeat</label>
+        <div class="recur-picker">
+          <button type="button" class="active" data-recur="none">Once</button>
+          <button type="button" data-recur="daily">Daily</button>
+          <button type="button" data-recur="weekly">Weekly</button>
+          <button type="button" data-recur="monthly">Monthly</button>
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="field" style="flex: 1 1 100%;">
+        <label for="notesInput">Notes (optional)</label>
+        <textarea id="notesInput" placeholder="Any extra detail to jog your memory"></textarea>
+      </div>
+    </div>
+    <button id="addBtn" type="submit">Add reminder</button>
+  </form>
+
+  <div class="filters" id="filters"></div>
+
+  <div class="section-label">Upcoming <span class="count" id="upcomingCount">0</span></div>
+  <div class="card" id="upcomingList"></div>
+
+  <div class="section-label">Done <span class="count" id="doneCount">0</span></div>
+  <div class="card" id="doneList"></div>
+
+</div>
+
+<div id="toast"></div>
+
+<div id="alarmOverlay">
+  <div id="alarmCard">
+    <div class="bell">⏰</div>
+    <div class="atitle" id="alarmTitle"></div>
+    <br>
+    <span class="atag" id="alarmTag"></span>
+    <div class="anotes" id="alarmNotes"></div>
+    <div class="abtns">
+      <button type="button" class="snoozeBtn" id="snoozeBtn">Snooze 5 min</button>
+      <button type="button" class="dismissBtn" id="dismissBtn">Dismiss</button>
+    </div>
+  </div>
+</div>
+
+<div id="settingsOverlay">
+  <div id="settingsCard">
+    <div class="modalHead">
+      <div class="modalTitle">Manage Categories</div>
+      <button class="closeX" id="closeSettings" type="button">✕</button>
+    </div>
+    <div id="catList"></div>
+    <div class="addCatRow">
+      <input type="text" id="newCatEmoji" class="emojiInput" maxlength="4" placeholder="🔖">
+      <input type="text" id="newCatName" class="nameInput" placeholder="New category name">
+      <input type="color" id="newCatColor" value="#3B5BA5">
+      <button id="addCatBtn" type="button">Add</button>
+    </div>
+    <div class="settingsHint">Rename, recolor, or delete any category — changes apply everywhere instantly. Deleting a category moves its existing reminders to the first one in the list.</div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------------- categories ----------------
+  var CAT_KEY = 'ledger_categories_v1';
+  var DEFAULT_CATEGORIES = [
+    { id: 'work',     emoji: '💼', name: 'Work',          color: '#3B5BA5' },
+    { id: 'report',   emoji: '📊', name: 'Reports',       color: '#8A5A2B' },
+    { id: 'meeting',  emoji: '📅', name: 'Meetings',      color: '#2E7D6B' },
+    { id: 'med',      emoji: '💊', name: 'Medication',    color: '#A8433D' },
+    { id: 'biz',      emoji: '🌿', name: 'Athar Scents',  color: '#5F6B3A' },
+    { id: 'personal', emoji: '🏠', name: 'Personal',      color: '#7A5980' }
+  ];
+
+  var categories = [];
+  try {
+    var rawCats = localStorage.getItem(CAT_KEY);
+    categories = rawCats ? JSON.parse(rawCats) : DEFAULT_CATEGORIES.slice();
+  } catch(e) { categories = DEFAULT_CATEGORIES.slice(); }
+  if (!categories.length) categories = DEFAULT_CATEGORIES.slice();
+
+  function saveCategories() {
+    try { localStorage.setItem(CAT_KEY, JSON.stringify(categories)); } catch(e) {}
+  }
+
+  function getCategory(id) {
+    for (var i=0;i<categories.length;i++) if (categories[i].id === id) return categories[i];
+    return { id: id, emoji: '🔖', name: id, color: '#8B8478' };
+  }
+
+  function slugify(name) {
+    var base = name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
+    if (!base) base = 'cat';
+    var id = base, n = 1;
+    while (categories.some(function(c){ return c.id === id; })) { id = base + '-' + (++n); }
+    return id;
+  }
+
+  // ---------------- reminders ----------------
+  var STORAGE_KEY = 'ledger_reminders_v2';
+  var reminders = [];
+  try {
+    var raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) reminders = JSON.parse(raw);
+    else {
+      var oldRaw = localStorage.getItem('segelli_reminders_v1');
+      if (oldRaw) reminders = JSON.parse(oldRaw);
+    }
+  } catch(e) { reminders = []; }
+
+  function save() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(reminders)); }
+    catch(e) { showToast('Could not save data on this device'); }
+  }
+
+  function uid() { return 'r' + Date.now() + Math.random().toString(36).slice(2,8); }
+
+  document.getElementById('headerSub').textContent = categories.map(function(c){ return c.name; }).join(' · ');
+
+  // ---------------- add-reminder form state ----------------
+  var selectedCat = categories[0].id;
+  var selectedRecur = 'none';
+
+  function rebuildCatPicker() {
+    var picker = document.getElementById('catPicker');
+    picker.innerHTML = '';
+    if (!categories.some(function(c){ return c.id === selectedCat; })) selectedCat = categories[0].id;
+    categories.forEach(function(cat){
+      var chip = document.createElement('div');
+      chip.className = 'cat-chip' + (cat.id === selectedCat ? ' active' : '');
+      chip.style.setProperty('--catcolor', cat.color);
+      chip.textContent = cat.emoji + ' ' + cat.name;
+      chip.addEventListener('click', function(){
+        selectedCat = cat.id;
+        rebuildCatPicker();
+      });
+      picker.appendChild(chip);
+    });
+  }
+  rebuildCatPicker();
+
+  var recurBtns = document.querySelectorAll('.recur-picker button');
+  recurBtns.forEach(function(btn){
+    btn.addEventListener('click', function(){
+      recurBtns.forEach(function(b){ b.classList.remove('active'); });
+      btn.classList.add('active');
+      selectedRecur = btn.getAttribute('data-recur');
+    });
+  });
+
+  function setDefaults(){
+    var d = new Date(Date.now() + 60*60*1000);
+    var pad = function(n){ return String(n).padStart(2,'0'); };
+    document.getElementById('dateInput').value = d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate());
+    document.getElementById('timeInput').value = pad(d.getHours()) + ':' + pad(d.getMinutes());
+  }
+  setDefaults();
+
+  document.getElementById('addForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    var title = document.getElementById('titleInput').value.trim();
+    var date = document.getElementById('dateInput').value;
+    var time = document.getElementById('timeInput').value;
+    var notes = document.getElementById('notesInput').value.trim();
+    if (!title || !date || !time) return;
+
+    var iso = date + 'T' + time + ':00';
+    reminders.push({
+      id: uid(), title: title, notes: notes, cat: selectedCat, recur: selectedRecur,
+      due: iso, done: false, lastFired: null
+    });
+    save();
+    render();
+    if (window.Android) {
+      var ms = new Date(iso).getTime();
+      if (ms > Date.now()) Android.schedule(reminders[reminders.length-1].id, title, notes, ms);
+    }
+    e.target.reset();
+    document.getElementById('notesInput').value = '';
+    showToast('Reminder added');
+    setDefaults();
+  });
+
+  // ---------------- filters ----------------
+  var activeFilter = 'all';
+  function rebuildFilters() {
+    var wrap = document.getElementById('filters');
+    wrap.innerHTML = '';
+    var allBtn = document.createElement('button');
+    allBtn.className = 'allBtn' + (activeFilter === 'all' ? ' active' : '');
+    allBtn.textContent = 'All';
+    allBtn.addEventListener('click', function(){ activeFilter = 'all'; rebuildFilters(); render(); });
+    wrap.appendChild(allBtn);
+
+    categories.forEach(function(cat){
+      var btn = document.createElement('button');
+      btn.className = 'catbtn' + (activeFilter === cat.id ? ' active' : '');
+      btn.style.setProperty('--catcolor', cat.color);
+      btn.textContent = cat.emoji + ' ' + cat.name;
+      btn.addEventListener('click', function(){ activeFilter = cat.id; rebuildFilters(); render(); });
+      wrap.appendChild(btn);
+    });
+  }
+  rebuildFilters();
+
+  // ---------------- rendering reminders ----------------
+  function fmtWhen(iso) {
+    var d = new Date(iso);
+    var now = new Date();
+    var opts = { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' };
+    return { text: d.toLocaleString('en-US', opts), overdue: d < now };
+  }
+
+  function render() {
+    var upcomingList = document.getElementById('upcomingList');
+    var doneList = document.getElementById('doneList');
+    upcomingList.innerHTML = '';
+    doneList.innerHTML = '';
+
+    var filtered = reminders.filter(function(r){ return activeFilter === 'all' || r.cat === activeFilter; });
+    var upcoming = filtered.filter(function(r){ return !r.done; }).sort(function(a,b){ return new Date(a.due) - new Date(b.due); });
+    var done = filtered.filter(function(r){ return r.done; }).sort(function(a,b){ return new Date(b.due) - new Date(a.due); });
+
+    document.getElementById('upcomingCount').textContent = upcoming.length;
+    document.getElementById('doneCount').textContent = done.length;
+
+    if (upcoming.length === 0) {
+      upcomingList.innerHTML = '<div class="empty"><div class="big">🕊️</div>Nothing coming up — your head is clear for now</div>';
+    } else {
+      upcoming.forEach(function(r){ upcomingList.appendChild(buildItem(r)); });
+    }
+    if (done.length === 0) {
+      doneList.innerHTML = '<div class="empty">Nothing marked done yet</div>';
+    } else {
+      done.forEach(function(r){ doneList.appendChild(buildItem(r)); });
+    }
+  }
+
+  function buildItem(r) {
+    var cat = getCategory(r.cat);
+    var el = document.createElement('div');
+    el.className = 'item' + (r.done ? ' done' : '');
+    el.style.setProperty('--catcolor', cat.color);
+
+    var when = fmtWhen(r.due);
+    var recurLabel = { none: '', daily: ' · repeats daily', weekly: ' · repeats weekly', monthly: ' · repeats monthly' }[r.recur] || '';
+
+    el.innerHTML =
+      '<div class="stripe"></div>' +
+      '<div class="body">' +
+        '<div class="top-row"><div class="title"></div><div class="when' + (!r.done && when.overdue ? ' overdue' : '') + '"></div></div>' +
+        (r.notes ? '<div class="notes"></div>' : '') +
+        '<span class="tag"></span>' +
+      '</div>' +
+      '<div class="actions">' +
+        '<button class="doneBtn" title="' + (r.done ? 'Restore' : 'Done') + '">' + (r.done ? '↺' : '✓') + '</button>' +
+        '<button class="delBtn" title="Delete">✕</button>' +
+      '</div>';
+
+    el.querySelector('.title').textContent = r.title;
+    el.querySelector('.when').textContent = when.text + (!r.done && when.overdue ? ' · overdue' : '');
+    if (r.notes) el.querySelector('.notes').textContent = r.notes;
+    el.querySelector('.tag').textContent = cat.emoji + ' ' + cat.name + recurLabel;
+
+    el.querySelector('.doneBtn').addEventListener('click', function(){ r.done = !r.done; save(); render(); });
+    el.querySelector('.delBtn').addEventListener('click', function(){
+      reminders = reminders.filter(function(x){ return x.id !== r.id; });
+      if (window.Android) Android.cancel(r.id);
+      save(); render();
+    });
+    return el;
+  }
+
+  // ---------------- notifications bell ----------------
+  var bellBtn = document.getElementById('bellStatus');
+  function updateBellUI() {
+    if (!('Notification' in window)) {
+      bellBtn.textContent = '🔕 Alerts not supported here';
+      bellBtn.classList.remove('on');
+      return;
+    }
+    if (Notification.permission === 'granted') { bellBtn.textContent = '🔔 Alerts on'; bellBtn.classList.add('on'); }
+    else { bellBtn.textContent = '🔔 Enable alerts'; bellBtn.classList.remove('on'); }
+  }
+  bellBtn.addEventListener('click', function(){
+    if (!('Notification' in window)) { showToast('This browser does not support notifications — keep the page open and you\'ll see reminders here'); return; }
+    if (Notification.permission === 'default') Notification.requestPermission().then(updateBellUI);
+    else if (Notification.permission === 'denied') showToast('Notifications are blocked in browser settings — allow them there first');
+  });
+  updateBellUI();
+
+  // ---------------- settings (manage categories) ----------------
+  var settingsBtn = document.getElementById('settingsBtn');
+  var settingsOverlay = document.getElementById('settingsOverlay');
+
+  function renderCatList() {
+    var wrap = document.getElementById('catList');
+    wrap.innerHTML = '';
+    categories.forEach(function(cat){
+      var row = document.createElement('div');
+      row.className = 'catRow';
+      row.innerHTML =
+        '<input type="text" class="emojiInput" maxlength="4" value="">' +
+        '<input type="text" class="nameInput" value="">' +
+        '<input type="color" value="">' +
+        '<button type="button" class="delCatBtn" title="Delete">✕</button>';
+
+      var emojiEl = row.querySelector('.emojiInput');
+      var nameEl = row.querySelector('.nameInput');
+      var colorEl = row.querySelector('input[type=color]');
+      emojiEl.value = cat.emoji;
+      nameEl.value = cat.name;
+      colorEl.value = cat.color;
+
+      emojiEl.addEventListener('input', function(){ cat.emoji = emojiEl.value || '🔖'; saveCategories(); refreshAllCategoryUI(); });
+      nameEl.addEventListener('input', function(){ cat.name = nameEl.value || cat.id; saveCategories(); refreshAllCategoryUI(); });
+      colorEl.addEventListener('input', function(){ cat.color = colorEl.value; saveCategories(); refreshAllCategoryUI(); });
+
+      row.querySelector('.delCatBtn').addEventListener('click', function(){
+        if (categories.length <= 1) { showToast('You need at least one category'); return; }
+        var fallbackId = categories.filter(function(c){ return c.id !== cat.id; })[0].id;
+        reminders.forEach(function(r){ if (r.cat === cat.id) r.cat = fallbackId; });
+        categories = categories.filter(function(c){ return c.id !== cat.id; });
+        save(); saveCategories();
+        renderCatList();
+        refreshAllCategoryUI();
+      });
+
+      wrap.appendChild(row);
+    });
+  }
+
+  function refreshAllCategoryUI() {
+    document.getElementById('headerSub').textContent = categories.map(function(c){ return c.name; }).join(' · ');
+    rebuildCatPicker();
+    rebuildFilters();
+    render();
+  }
+
+  document.getElementById('addCatBtn').addEventListener('click', function(){
+    var emoji = document.getElementById('newCatEmoji').value.trim() || '🔖';
+    var name = document.getElementById('newCatName').value.trim();
+    var color = document.getElementById('newCatColor').value || '#3B5BA5';
+    if (!name) { showToast('Give the category a name first'); return; }
+    categories.push({ id: slugify(name), emoji: emoji, name: name, color: color });
+    saveCategories();
+    document.getElementById('newCatEmoji').value = '';
+    document.getElementById('newCatName').value = '';
+    renderCatList();
+    refreshAllCategoryUI();
+  });
+
+  settingsBtn.addEventListener('click', function(){
+    renderCatList();
+    settingsOverlay.classList.add('show');
+  });
+  document.getElementById('closeSettings').addEventListener('click', function(){
+    settingsOverlay.classList.remove('show');
+  });
+  settingsOverlay.addEventListener('click', function(e){
+    if (e.target === settingsOverlay) settingsOverlay.classList.remove('show');
+  });
+
+  // ---------------- alarm: ring + vibrate + popup ----------------
+  var ringCtx = null;
+  var ringInterval = null;
+  var vibrateInterval = null;
+  var ringingReminderId = null;
+  var VIBRATE_PATTERN = [300, 150, 300, 150, 300];
+
+  function playTone(freq, startOffset, dur) {
+    try {
+      var o = ringCtx.createOscillator();
+      var g = ringCtx.createGain();
+      o.type = 'sine'; o.frequency.value = freq;
+      var t0 = ringCtx.currentTime + startOffset;
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(0.28, t0 + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      o.connect(g); g.connect(ringCtx.destination);
+      o.start(t0); o.stop(t0 + dur + 0.05);
+    } catch(e) {}
+  }
+  function ringOnce() {
+    if (!ringCtx) { try { ringCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) { return; } }
+    if (ringCtx.state === 'suspended') ringCtx.resume();
+    playTone(880, 0, 0.3);
+    playTone(660, 0.34, 0.3);
+  }
+
+  function startAlarm(r) {
+    var cat = getCategory(r.cat);
+    ringingReminderId = r.id;
+
+    ringOnce();
+    clearInterval(ringInterval);
+    ringInterval = setInterval(ringOnce, 1300);
+
+    if (navigator.vibrate) {
+      navigator.vibrate(VIBRATE_PATTERN);
+      clearInterval(vibrateInterval);
+      vibrateInterval = setInterval(function(){ navigator.vibrate(VIBRATE_PATTERN); }, 1300);
+    }
+
+    clearTimeout(startAlarm._autoStop);
+    startAlarm._autoStop = setTimeout(stopAlarm, 45000);
+
+    document.getElementById('alarmTitle').textContent = r.title;
+    var tagEl = document.getElementById('alarmTag');
+    tagEl.style.setProperty('--catcolor', cat.color);
+    tagEl.textContent = cat.emoji + ' ' + cat.name;
+    var notesEl = document.getElementById('alarmNotes');
+    if (r.notes) { notesEl.textContent = r.notes; notesEl.style.display = 'block'; }
+    else { notesEl.textContent = ''; notesEl.style.display = 'none'; }
+
+    document.getElementById('alarmOverlay').classList.add('show');
+  }
+
+  function stopAlarm() {
+    clearInterval(ringInterval); ringInterval = null;
+    clearInterval(vibrateInterval); vibrateInterval = null;
+    clearTimeout(startAlarm._autoStop);
+    if (navigator.vibrate) navigator.vibrate(0);
+    document.getElementById('alarmOverlay').classList.remove('show');
+    ringingReminderId = null;
+  }
+
+  document.getElementById('dismissBtn').addEventListener('click', stopAlarm);
+  document.getElementById('snoozeBtn').addEventListener('click', function(){
+    var r = reminders.filter(function(x){ return x.id === ringingReminderId; })[0];
+    if (r) {
+      var d = new Date(Date.now() + 5*60*1000);
+      r.due = d.toISOString().slice(0,19);
+      r.lastFired = null;
+      if (window.Android) Android.schedule(r.id, r.title, r.notes || '', d.getTime());
+      save(); render();
+    }
+    stopAlarm();
+  });
+
+  function showToast(msg) {
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(showToast._h);
+    showToast._h = setTimeout(function(){ t.classList.remove('show'); }, 3200);
+  }
+
+  function nextDue(r) {
+    var d = new Date(r.due);
+    if (r.recur === 'daily') d.setDate(d.getDate() + 1);
+    else if (r.recur === 'weekly') d.setDate(d.getDate() + 7);
+    else if (r.recur === 'monthly') d.setMonth(d.getMonth() + 1);
+    return d;
+  }
+
+  function checkDue() {
+    var now = new Date();
+    var changed = false;
+    reminders.forEach(function(r){
+      if (r.done) return;
+      var due = new Date(r.due);
+      if (due <= now) {
+        if (r.lastFired !== r.due) {
+          fireReminder(r);
+          r.lastFired = r.due;
+          if (r.recur !== 'none') {
+            r.due = nextDue(r).toISOString().slice(0,19); r.lastFired = null;
+            if (window.Android) Android.schedule(r.id, r.title, r.notes || '', new Date(r.due).getTime());
+          }
+          changed = true;
+        }
+      }
+    });
+    if (changed) { save(); render(); }
+  }
+
+  function fireReminder(r) {
+    startAlarm(r);
+    if ('Notification' in window && Notification.permission === 'granted') {
+      var cat = getCategory(r.cat);
+      try {
+        new Notification(r.title, {
+          body: cat.emoji + ' ' + cat.name + (r.notes ? ' — ' + r.notes : ''),
+          tag: r.id,
+          vibrate: VIBRATE_PATTERN
+        });
+      } catch(e) {}
+    }
+  }
+
+  setInterval(checkDue, 15000);
+  window.addEventListener('focus', checkDue);
+
+  render();
+  checkDue();
+})();
+</script>
+</body>
+</html>
